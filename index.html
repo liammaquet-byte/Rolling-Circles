@@ -1,1 +1,446 @@
-hello
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cycloid & Epicycloid Explorer</title>
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --card: #ffffff;
+      --ink: #18181b;
+      --muted: #5f6074;
+      --soft: #e9e9ee;
+      --line: #d4d4d8;
+      --accent: #2563eb;
+      --gold: #d6a545;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px;
+    }
+    .eyebrow {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 6px 0 12px;
+      font-size: clamp(2.4rem, 6vw, 4.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+    h2 { margin: 0 0 12px; font-size: 1.45rem; }
+    p { color: var(--muted); line-height: 1.5; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+      margin-top: 20px;
+    }
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 22px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.055);
+    }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 15px;
+      background: var(--soft);
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.active { background: var(--ink); color: white; }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: white;
+      border-radius: 18px;
+      touch-action: none;
+      user-select: none;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px 18px;
+      margin: 8px 0 18px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    input[type="range"] { width: 100%; }
+    .unit { color: var(--muted); font-weight: 600; margin-left: 4px; }
+    .note, .status {
+      margin-top: 12px;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .small { font-size: 0.9rem; }
+    @media (max-width: 900px) {
+      .grid, .bottom-grid, .controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Design and Communication Graphics</div>
+      <h1>Cycloid & Epicycloid Explorer</h1>
+      <p>Visualise how a point on a rolling circle generates cycloids, epicycloids, hypocycloids, and trochoids. Step through the construction, show centre paths and radial construction lines, then export the generated curve as DXF.</p>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>1. Rolling construction</h2>
+        <p id="modeHelp">Cycloid: a circle rolls along a straight line and a point on its circumference traces the curve.</p>
+        <svg id="scene" viewBox="0 0 760 520"></svg>
+      </div>
+
+      <div class="card">
+        <h2>2. Controls</h2>
+        <div class="button-row">
+          <button class="mode active" data-mode="cycloid">Cycloid</button>
+          <button class="mode" data-mode="epicycloid">Epicycloid</button>
+          <button class="mode" data-mode="hypocycloid">Hypocycloid</button>
+        </div>
+
+        <div class="controls">
+          <label><div class="label-row"><span>Fixed radius <span class="unit">(mm)</span></span><strong id="fixedValue"></strong></div><input id="fixedRadius" type="range" min="80" max="210" step="1"></label>
+          <label><div class="label-row"><span>Rolling radius <span class="unit">(mm)</span></span><strong id="rollingValue"></strong></div><input id="rollingRadius" type="range" min="20" max="100" step="1"></label>
+          <label><div class="label-row"><span>Point distance <span class="unit">(mm)</span></span><strong id="pointValue"></strong></div><input id="pointDistance" type="range" min="5" max="140" step="1"></label>
+          <label><div class="label-row"><span>Divisions</span><strong id="divisionsValue"></strong></div><input id="divisions" type="range" min="6" max="36" step="1"></label>
+          <label><div class="label-row"><span>Progress</span><strong id="progressValue"></strong></div><input id="progress" type="range" min="0" max="1" step="0.002"></label>
+          <label><div class="label-row"><span>Animation speed</span><strong id="speedValue"></strong></div><input id="speed" type="range" min="0.2" max="4" step="0.1"></label>
+        </div>
+
+        <div class="button-row">
+          <button id="play">Play</button>
+          <button id="constructionToggle" class="active">Construction on</button>
+          <button id="labelsToggle" class="active">Labels on</button>
+          <button id="circleToggle" class="active">Rolling circle on</button>
+          <button id="reset">Reset</button>
+          <button id="exportDxf">Export DXF</button>
+        </div>
+
+        <div class="status" id="statusBox"></div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="card">
+        <h2>3. Isolated locus</h2>
+        <p class="small">The generated curve is shown without the construction geometry.</p>
+        <svg id="locus" viewBox="0 0 640 260"></svg>
+      </div>
+      <div class="card">
+        <h2>Teaching notes</h2>
+        <div class="note" id="notes"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rad = d => d * Math.PI / 180;
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const scene = { w: 760, h: 520 };
+    const locusSvg = { w: 640, h: 260 };
+
+    let mode, fixedRadius, rollingRadius, pointDistance, divisions, progress, speed;
+    let playing, showConstruction, showLabels, showRollingCircle;
+    let lastFrame = null;
+
+    function resetState() {
+      mode = "cycloid";
+      fixedRadius = 150;
+      rollingRadius = 55;
+      pointDistance = 55;
+      divisions = 12;
+      progress = 0.68;
+      speed = 1;
+      playing = false;
+      showConstruction = true;
+      showLabels = true;
+      showRollingCircle = true;
+    }
+
+    function svgEl(name, attrs) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    }
+    function textEl(attrs, text) {
+      const el = svgEl("text", attrs);
+      el.textContent = text;
+      return el;
+    }
+    function circle(parent, p, r, attrs) {
+      parent.appendChild(svgEl("circle", { cx: p.x, cy: p.y, r, ...attrs }));
+    }
+    function line(parent, a, b, attrs) {
+      parent.appendChild(svgEl("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, ...attrs }));
+    }
+
+    function totalTurns() {
+      if (mode === "cycloid") return 2 * Math.PI;
+      return 2 * Math.PI;
+    }
+
+    function pointAt(t) {
+      const r = rollingRadius;
+      const d = pointDistance;
+      if (mode === "cycloid") {
+        const baseX = 100;
+        const baseY = 360;
+        const x = baseX + r * t - d * Math.sin(t);
+        const y = baseY - r + d * Math.cos(t);
+        const c = { x: baseX + r * t, y: baseY - r };
+        const contact = { x: baseX + r * t, y: baseY };
+        return { p: { x, y }, c, contact, angle: -t, centreAngle: 0 };
+      }
+      const R = fixedRadius;
+      const O = { x: 380, y: 285 };
+      if (mode === "epicycloid") {
+        const c = { x: O.x + (R + r) * Math.cos(t), y: O.y - (R + r) * Math.sin(t) };
+        const x = O.x + (R + r) * Math.cos(t) - d * Math.cos(((R + r) / r) * t);
+        const y = O.y - (R + r) * Math.sin(t) + d * Math.sin(((R + r) / r) * t);
+        const contact = { x: O.x + R * Math.cos(t), y: O.y - R * Math.sin(t) };
+        return { p: { x, y }, c, contact, O, angle: ((R + r) / r) * t, centreAngle: t };
+      }
+      const c = { x: O.x + (R - r) * Math.cos(t), y: O.y - (R - r) * Math.sin(t) };
+      const x = O.x + (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t);
+      const y = O.y - (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t);
+      const contact = { x: O.x + R * Math.cos(t), y: O.y - R * Math.sin(t) };
+      return { p: { x, y }, c, contact, O, angle: -((R - r) / r) * t, centreAngle: t };
+    }
+
+    function allCurvePoints(samples) {
+      const maxT = totalTurns();
+      return Array.from({ length: samples || 500 }, (_, i) => pointAt(maxT * i / ((samples || 500) - 1)).p);
+    }
+
+    function currentT() {
+      return totalTurns() * progress;
+    }
+
+    function visibleCurvePoints(samples) {
+      const maxT = currentT();
+      const count = Math.max(2, Math.round((samples || 500) * progress));
+      return Array.from({ length: count }, (_, i) => pointAt(maxT * i / (count - 1)).p);
+    }
+
+    function pathFromPoints(points) {
+      return points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(2) + "," + p.y.toFixed(2)).join(" ");
+    }
+
+    function renderScene() {
+      const svg = document.getElementById("scene");
+      svg.innerHTML = "";
+      svg.appendChild(svgEl("rect", { width: scene.w, height: scene.h, rx: 18, fill: "white" }));
+
+      const now = pointAt(currentT());
+      const curve = visibleCurvePoints(520);
+
+      if (mode === "cycloid") {
+        line(svg, { x: 60, y: 360 }, { x: 700, y: 360 }, { stroke: "#18181b", "stroke-width": 4, "stroke-linecap": "round" });
+        svg.appendChild(textEl({ x: 610, y: 344, "font-size": 13, fill: "#52525b", "font-weight": 700 }, "directing line"));
+        if (showConstruction) {
+          line(svg, { x: 100, y: now.c.y }, { x: 700, y: now.c.y }, { stroke: "#d4d4d8", "stroke-width": 2, "stroke-dasharray": "7 6" });
+          svg.appendChild(textEl({ x: 585, y: now.c.y - 8, "font-size": 13, fill: "#71717a" }, "path of centre"));
+        }
+      } else {
+        const O = now.O;
+        circle(svg, O, fixedRadius, { fill: "none", stroke: "#18181b", "stroke-width": 4 });
+        circle(svg, O, mode === "epicycloid" ? fixedRadius + rollingRadius : fixedRadius - rollingRadius, { fill: "none", stroke: "#d4d4d8", "stroke-width": 2, "stroke-dasharray": "7 6" });
+        if (showConstruction) {
+          line(svg, O, now.c, { stroke: "#d6a545", "stroke-width": 1.5, opacity: 0.65 });
+          line(svg, O, now.contact, { stroke: "#d6a545", "stroke-width": 1.5, opacity: 0.65 });
+        }
+        circle(svg, O, 5, { fill: "#18181b" });
+        if (showLabels) svg.appendChild(textEl({ x: O.x - 8, y: O.y + fixedRadius + 34, "font-size": 13, fill: "#52525b", "text-anchor": "middle" }, "centre of stationary circle"));
+      }
+
+      if (showConstruction) {
+        for (let i = 0; i <= divisions; i++) {
+          const t = totalTurns() * i / divisions;
+          const s = pointAt(t);
+          if (t <= currentT() + 0.0001) {
+            if (mode !== "cycloid") line(svg, s.O, s.contact, { stroke: "#d6a545", "stroke-width": 1, opacity: 0.35 });
+            line(svg, s.c, s.p, { stroke: "#d6a545", "stroke-width": 1, opacity: 0.45 });
+            circle(svg, s.p, 2.4, { fill: "#18181b", opacity: 0.55 });
+            if (showLabels && i > 0) {
+              svg.appendChild(textEl({ x: s.p.x + 6, y: s.p.y - 6, "font-size": 11, fill: "#52525b" }, "P" + i));
+              svg.appendChild(textEl({ x: s.c.x + 6, y: s.c.y - 6, "font-size": 11, fill: "#71717a" }, "C" + i));
+            }
+          }
+        }
+      }
+
+      svg.appendChild(svgEl("path", { d: pathFromPoints(curve), fill: "none", stroke: "#18181b", "stroke-width": 4, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+
+      if (showRollingCircle) {
+        circle(svg, now.c, rollingRadius, { fill: "none", stroke: "#71717a", "stroke-width": 3 });
+        line(svg, now.c, now.p, { stroke: "#2563eb", "stroke-width": 3, "stroke-linecap": "round" });
+        line(svg, now.c, now.contact, { stroke: "#a1a1aa", "stroke-width": 2, "stroke-dasharray": "6 6" });
+        circle(svg, now.c, 5, { fill: "#71717a" });
+        circle(svg, now.p, 8, { fill: "#2563eb", stroke: "white", "stroke-width": 3 });
+        circle(svg, now.contact, 4, { fill: "#d6a545" });
+      }
+
+      if (showLabels) {
+        svg.appendChild(textEl({ x: now.p.x + 12, y: now.p.y - 12, "font-size": 13, fill: "#2563eb", "font-weight": 700 }, "generating point P"));
+        svg.appendChild(textEl({ x: now.c.x + 10, y: now.c.y + 18, "font-size": 13, fill: "#71717a", "font-weight": 700 }, "rolling circle centre"));
+      }
+    }
+
+    function renderLocus() {
+      const svg = document.getElementById("locus");
+      svg.innerHTML = "";
+      svg.appendChild(svgEl("rect", { width: locusSvg.w, height: locusSvg.h, rx: 18, fill: "white" }));
+      const pts = allCurvePoints(700);
+      const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const spanX = Math.max(1, maxX - minX), spanY = Math.max(1, maxY - minY);
+      const scale = Math.min((locusSvg.w - 80) / spanX, (locusSvg.h - 70) / spanY);
+      const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+      const map = p => ({ x: locusSvg.w / 2 + (p.x - cx) * scale, y: locusSvg.h / 2 + (p.y - cy) * scale });
+      for (let x = 70; x <= 570; x += 50) svg.appendChild(svgEl("line", { x1: x, y1: 38, x2: x, y2: 222, stroke: "#f4f4f5" }));
+      for (let y = 50; y <= 210; y += 40) svg.appendChild(svgEl("line", { x1: 50, y1: y, x2: 590, y2: y, stroke: "#f4f4f5" }));
+      const mapped = pts.map(map);
+      svg.appendChild(svgEl("path", { d: pathFromPoints(mapped), fill: "none", stroke: "#18181b", "stroke-width": 4, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      const current = map(pointAt(currentT()).p);
+      circle(svg, current, 8, { fill: "#2563eb", stroke: "white", "stroke-width": 3 });
+      svg.appendChild(textEl({ x: 24, y: 28, "font-size": 13, fill: "#52525b", "font-weight": 700 }, "Complete generated locus"));
+    }
+
+    function renderStatus() {
+      const status = document.getElementById("statusBox");
+      const t = currentT();
+      const turns = t / (2 * Math.PI);
+      status.innerHTML = `<strong>${modeLabel()}</strong>Rolling angle: ${(t * 180 / Math.PI).toFixed(0)}°<br>Curve progress: ${(progress * 100).toFixed(0)}%<br>Rolling-circle rotations: ${turns.toFixed(2)}`;
+      document.getElementById("modeHelp").textContent = mode === "cycloid"
+        ? "Cycloid: a circle rolls along a straight line and a point on its circumference traces the curve."
+        : mode === "epicycloid"
+          ? "Epicycloid: a circle rolls around the outside of a fixed circle."
+          : "Hypocycloid: a circle rolls around the inside of a fixed circle.";
+      document.getElementById("notes").innerHTML = mode === "cycloid"
+        ? `<strong>Cycloid:</strong><br>A point on a circle rolling along a straight line generates a cycloid. If the point distance equals the rolling radius, cusps form at the directing line.`
+        : mode === "epicycloid"
+          ? `<strong>Epicycloid:</strong><br>The rolling circle moves outside the fixed circle. Construction lines from the stationary centre help locate equal angular divisions, as in manual engineering graphics construction.`
+          : `<strong>Hypocycloid:</strong><br>The rolling circle moves inside the fixed circle. Changing the ratio between fixed and rolling radii creates different closed or open-looking curves.`;
+    }
+
+    function modeLabel() {
+      return mode === "cycloid" ? "Cycloid" : mode === "epicycloid" ? "Epicycloid" : "Hypocycloid";
+    }
+
+    function render() {
+      document.querySelectorAll(".mode").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+      document.getElementById("fixedRadius").value = fixedRadius;
+      document.getElementById("rollingRadius").value = rollingRadius;
+      document.getElementById("pointDistance").value = pointDistance;
+      document.getElementById("divisions").value = divisions;
+      document.getElementById("progress").value = progress;
+      document.getElementById("speed").value = speed;
+      document.getElementById("fixedValue").textContent = fixedRadius;
+      document.getElementById("rollingValue").textContent = rollingRadius;
+      document.getElementById("pointValue").textContent = pointDistance;
+      document.getElementById("divisionsValue").textContent = divisions;
+      document.getElementById("progressValue").textContent = Math.round(progress * 100) + "%";
+      document.getElementById("speedValue").textContent = speed.toFixed(1) + "×";
+      document.getElementById("play").textContent = playing ? "Pause" : "Play";
+      document.getElementById("play").classList.toggle("active", playing);
+      document.getElementById("constructionToggle").textContent = showConstruction ? "Construction on" : "Construction off";
+      document.getElementById("constructionToggle").classList.toggle("active", showConstruction);
+      document.getElementById("labelsToggle").textContent = showLabels ? "Labels on" : "Labels off";
+      document.getElementById("labelsToggle").classList.toggle("active", showLabels);
+      document.getElementById("circleToggle").textContent = showRollingCircle ? "Rolling circle on" : "Rolling circle off";
+      document.getElementById("circleToggle").classList.toggle("active", showRollingCircle);
+      renderStatus();
+      renderScene();
+      renderLocus();
+    }
+
+    function downloadDxf() {
+      const pts = allCurvePoints(900);
+      const polyline = (layer, pts) => ["0", "POLYLINE", "8", layer, "66", "1", "70", "0", ...pts.flatMap(p => ["0", "VERTEX", "8", layer, "10", p.x.toFixed(4), "20", (-p.y).toFixed(4), "30", "0"]), "0", "SEQEND"];
+      const dxf = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES", ...polyline(mode.toUpperCase() + "_CURVE", pts), "0", "ENDSEC", "0", "EOF"].join("\n");
+      const blob = new Blob([dxf], { type: "application/dxf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = mode + "-curve.dxf";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function bind(id, fn) {
+      document.getElementById(id).oninput = e => { fn(Number(e.target.value)); render(); };
+    }
+    bind("fixedRadius", v => fixedRadius = v);
+    bind("rollingRadius", v => { rollingRadius = v; if (mode === "cycloid") pointDistance = v; });
+    bind("pointDistance", v => pointDistance = v);
+    bind("divisions", v => divisions = v);
+    bind("progress", v => progress = v);
+    bind("speed", v => speed = v);
+
+    document.querySelectorAll(".mode").forEach(b => b.onclick = () => { mode = b.dataset.mode; render(); });
+    document.getElementById("play").onclick = () => { playing = !playing; lastFrame = null; render(); requestAnimationFrame(tick); };
+    document.getElementById("constructionToggle").onclick = () => { showConstruction = !showConstruction; render(); };
+    document.getElementById("labelsToggle").onclick = () => { showLabels = !showLabels; render(); };
+    document.getElementById("circleToggle").onclick = () => { showRollingCircle = !showRollingCircle; render(); };
+    document.getElementById("reset").onclick = () => { resetState(); render(); };
+    document.getElementById("exportDxf").onclick = downloadDxf;
+
+    function tick(time) {
+      if (!playing) return;
+      if (lastFrame === null) lastFrame = time;
+      const dt = (time - lastFrame) / 1000;
+      lastFrame = time;
+      progress = (progress + dt * speed * 0.12) % 1;
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    resetState();
+    render();
+  </script>
+</body>
+</html>
